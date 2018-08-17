@@ -29,7 +29,7 @@ def get_tf(doc, t):
 def get_idf(term):
     n = get_total_docs()
     nt = get_occurrence_term_in_docs(term)
-    return round(math.log(n/nt), 2)
+    return round(math.log(n) - math.log(nt), 2)
 
 
 def get_weight(doc, term):
@@ -72,7 +72,9 @@ def provide_rank(query):
     vectors_weight_docs = get_vectors_weight_docs()
     vector_weight_query = get_vector_weight_query(query.split())
 
-    return [cosine(v, vector_weight_query) for v in vectors_weight_docs]
+    rank = [(i, cosine(v, vector_weight_query)) for i, v in enumerate(vectors_weight_docs)]
+
+    return sorted(rank, key=lambda tup: tup[1])
 
 
-print(provide_rank('A A C'))
+print(provide_rank('A B C'))
