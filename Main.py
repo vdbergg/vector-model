@@ -1,13 +1,13 @@
 import math
+import re
 
-collection = [['A', 'A', 'A', 'B'], ['A', 'A', 'C'], ['A', 'A'], ['B', 'B']]
+collection = []
 
 
 def get_vocabulary():
     vocabulary = []
     for doc in collection:
-        for term in doc:
-            [vocabulary.append(letter) for letter in term if letter not in vocabulary]
+        [vocabulary.append(term) for term in doc if term not in vocabulary]
 
     return sorted(vocabulary)
 
@@ -65,16 +65,71 @@ def cosine(doc, query):
     doc_norm = get_norm(doc)
     query_norm = get_norm(query)
 
-    return round(inner_product / (doc_norm * query_norm), 2)
+    quotient = doc_norm * query_norm
+
+    if quotient == 0:
+        return 0
+
+    return round(inner_product / quotient, 2)
 
 
 def provide_rank(query):
+    global collection
+    collection = []
+
+    parser_collection()
+
     vectors_weight_docs = get_vectors_weight_docs()
     vector_weight_query = get_vector_weight_query(query.split())
 
-    rank = [(i, cosine(v, vector_weight_query)) for i, v in enumerate(vectors_weight_docs)]
+    rank = [cosine(v, vector_weight_query) for v in vectors_weight_docs]
+
+    rank = [(i, ranked) for i, ranked in enumerate(rank) if ranked != 0]
 
     return sorted(rank, key=lambda tup: tup[1])
 
 
-print(provide_rank('A B C'))
+def parser_collection():
+    doc_paths = [
+        '/home/berg/PycharmProjects/vector-model/documents/doc1.txt',
+        '/home/berg/PycharmProjects/vector-model/documents/doc2.txt',
+        '/home/berg/PycharmProjects/vector-model/documents/doc3.txt',
+        '/home/berg/PycharmProjects/vector-model/documents/doc4.txt',
+        '/home/berg/PycharmProjects/vector-model/documents/doc5.txt',
+        '/home/berg/PycharmProjects/vector-model/documents/doc6.txt',
+        '/home/berg/PycharmProjects/vector-model/documents/doc7.txt',
+    ]
+
+    for doc_path in doc_paths:
+        file = open(doc_path, 'r')
+        terms = file.read()
+        collection.append(
+            [
+                (
+                    re.sub(r'[?|%|#|/|$|.|"|:|;|!|,|\n|(|)|[|]|{|}|0-9|]', r'', term)
+                ).lower() for term in terms.split(' ')
+            ]
+        )
+
+    for i, doc in enumerate(collection):
+        collection[i] = [re.sub('^[0-9]+', '', term.replace('-', '')) for term in doc]
+        collection[i] = [term for term in collection[i] if term is not '']
+
+    return collection
+
+
+def run():
+    query = input('Enter a query: ')
+
+    ranked = provide_rank(query)
+
+    if not ranked:
+        print('Nenhum resultado encontrado')
+    else:
+        print(ranked)
+
+    run()
+
+
+run()
+
